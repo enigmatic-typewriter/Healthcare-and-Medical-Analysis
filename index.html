@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GlucoTrack Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <nav class="topbar">
+        <div class="brand">
+          <span class="brand-mark">GT</span>
+          <div>
+            <p class="eyebrow">Healthcare &amp; Medical Analytics</p>
+            <h1>GlucoTrack Analytics</h1>
+          </div>
+        </div>
+        <a class="ghost-button" href="https://www.kaggle.com/datasets/iammustafatz/diabetes-prediction-dataset" target="_blank" rel="noreferrer">Open Dataset</a>
+      </nav>
+
+      <section class="hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Internship Project</p>
+          <h2>Diabetes risk analysis, cohort exploration, and early prediction in one web app.</h2>
+          <p class="hero-text">
+            This project uses the Kaggle diabetes prediction dataset to study disease prevalence, compare patient risk factors, and estimate diabetes likelihood from clinical indicators such as HbA1c, BMI, hypertension, and blood glucose level.
+          </p>
+          <div class="hero-actions">
+            <a class="primary-button" href="#workspace">Explore Dashboard</a>
+            <a class="secondary-button" href="#predictor">Try Predictor</a>
+          </div>
+        </div>
+
+        <aside class="hero-panel">
+          <p class="panel-label">Project coverage</p>
+          <div class="mini-grid">
+            <div class="mini-card"><span>EDA</span><strong>Population trends</strong></div>
+            <div class="mini-card"><span>ML</span><strong>Binary classification</strong></div>
+            <div class="mini-card"><span>Output</span><strong>Risk scoring</strong></div>
+            <div class="mini-card"><span>Use case</span><strong>Early screening support</strong></div>
+          </div>
+          <p class="hero-note">
+            The app runs entirely in the browser, so it can be hosted on GitHub Pages and still demonstrate preprocessing, model fitting, cohort segmentation, and live probability estimation.
+          </p>
+        </aside>
+      </section>
+    </header>
+
+    <main id="workspace">
+      <section class="panel upload-panel">
+        <div>
+          <p class="eyebrow">Dataset Input</p>
+          <h3>Load the Kaggle CSV or use the built-in demo data</h3>
+          <p class="section-text">
+            If you place <code>diabetes_prediction_dataset.csv</code> inside the <code>data</code> folder, the dashboard picks it up automatically. You can also upload the file manually from your machine.
+          </p>
+        </div>
+        <div class="upload-actions">
+          <label class="upload-button" for="dataset-upload">Upload CSV</label>
+          <input id="dataset-upload" type="file" accept=".csv">
+          <button id="use-demo" class="secondary-button" type="button">Use Demo Dataset</button>
+        </div>
+        <div class="source-strip">
+          <div><span class="source-label">Current source</span><strong id="dataset-source">Checking local dataset...</strong></div>
+          <div><span class="source-label">Rows in memory</span><strong id="dataset-size">0</strong></div>
+          <div><span class="source-label">Model status</span><strong id="model-status">Waiting for data</strong></div>
+        </div>
+      </section>
+
+      <section class="stats-grid" id="stats-grid"></section>
+
+      <section class="layout-grid">
+        <article class="panel span-two">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Cohort Snapshot</p>
+              <h3>How diabetes prevalence shifts across the loaded population</h3>
+            </div>
+          </div>
+          <div id="summary-insights" class="insight-grid"></div>
+        </article>
+
+        <article class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Outcome Mix</p>
+              <h3>Class balance</h3>
+            </div>
+          </div>
+          <div id="class-breakdown" class="metric-stack"></div>
+        </article>
+
+        <article class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Gender Split</p>
+              <h3>Patient composition</h3>
+            </div>
+          </div>
+          <div id="gender-chart" class="chart-list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Smoking History</p>
+              <h3>Lifestyle distribution</h3>
+            </div>
+          </div>
+          <div id="smoking-chart" class="chart-list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Clinical Bands</p>
+              <h3>Glucose segmentation</h3>
+            </div>
+          </div>
+          <div id="glucose-chart" class="chart-list"></div>
+        </article>
+
+        <article class="panel span-two">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Model Evaluation</p>
+              <h3>Browser-side logistic regression results</h3>
+            </div>
+            <span class="tag">Train / test split</span>
+          </div>
+          <div class="model-grid">
+            <div id="model-metrics" class="metrics-grid"></div>
+            <div class="matrix-card">
+              <p class="matrix-title">Confusion Matrix</p>
+              <div id="confusion-matrix" class="matrix-grid"></div>
+            </div>
+            <div class="importance-card">
+              <p class="matrix-title">Top feature weights</p>
+              <div id="feature-importance" class="chart-list compact"></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel span-two" id="predictor">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Live Prediction</p>
+              <h3>Estimate diabetes probability for a new patient profile</h3>
+            </div>
+            <span class="tag">Decision support demo</span>
+          </div>
+
+          <form id="prediction-form" class="predictor-grid">
+            <label><span>Gender</span><select name="gender"><option value="Female">Female</option><option value="Male">Male</option><option value="Other">Other</option></select></label>
+            <label><span>Age</span><input name="age" type="number" min="1" max="100" step="1" value="48"></label>
+            <label><span>Hypertension</span><select name="hypertension"><option value="0">No</option><option value="1">Yes</option></select></label>
+            <label><span>Heart Disease</span><select name="heart_disease"><option value="0">No</option><option value="1">Yes</option></select></label>
+            <label><span>Smoking History</span><select name="smoking_history"><option value="never">Never</option><option value="former">Former</option><option value="current">Current</option><option value="not current">Not current</option><option value="ever">Ever</option><option value="No Info">No Info</option></select></label>
+            <label><span>BMI</span><input name="bmi" type="number" min="10" max="80" step="0.1" value="29.8"></label>
+            <label><span>HbA1c Level</span><input name="HbA1c_level" type="number" min="3" max="15" step="0.1" value="6.8"></label>
+            <label><span>Blood Glucose</span><input name="blood_glucose_level" type="number" min="60" max="350" step="1" value="182"></label>
+            <button class="primary-button full-width" type="submit">Predict Risk</button>
+          </form>
+
+          <div id="prediction-output" class="prediction-output"></div>
+        </article>
+
+        <article class="panel span-two">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Data Preview</p>
+              <h3>Sample records from the active dataset</h3>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Gender</th>
+                  <th>Age</th>
+                  <th>Hypertension</th>
+                  <th>Heart Disease</th>
+                  <th>Smoking</th>
+                  <th>BMI</th>
+                  <th>HbA1c</th>
+                  <th>Glucose</th>
+                  <th>Diabetes</th>
+                </tr>
+              </thead>
+              <tbody id="data-table-body"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Method</p>
+              <h3>Pipeline</h3>
+            </div>
+          </div>
+          <ol class="steps-list">
+            <li>Load CSV data from Kaggle export or demo sample.</li>
+            <li>Clean numeric values and normalize category labels.</li>
+            <li>Engineer feature vectors from demographic and clinical fields.</li>
+            <li>Train a logistic regression model in the browser.</li>
+            <li>Evaluate accuracy, precision, recall, and F1-score.</li>
+            <li>Use the fitted weights to estimate a new patient risk score.</li>
+          </ol>
+        </article>
+
+        <article class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Internship Value</p>
+              <h3>Why this project is useful</h3>
+            </div>
+          </div>
+          <div class="notes-list">
+            <p>Shows EDA on healthcare data with meaningful business and clinical insights.</p>
+            <p>Connects risk indicators like BMI, HbA1c, glucose, and comorbidities to a prediction problem.</p>
+            <p>Runs with zero backend so the project is easy to demo, deploy, and review on GitHub.</p>
+            <p>Can be extended later with Python notebooks, Flask APIs, or deep learning models.</p>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
