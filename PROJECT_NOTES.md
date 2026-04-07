@@ -6,7 +6,7 @@ GlucoTrack Analytics: Diabetes Risk Analysis and Early Prediction Dashboard
 
 ## Abstract
 
-GlucoTrack Analytics is a healthcare analytics project created for GTU Problem Domain 5. The project studies diabetes-related patient data from a public Kaggle dataset and presents key patterns through a browser dashboard. It combines exploratory data analysis, simple machine learning, and live probability estimation to show how healthcare data can support early disease screening and decision-making.
+GlucoTrack Analytics is a healthcare analytics project created for GTU Problem Domain 5. The project studies diabetes-related patient data from a public Kaggle dataset and presents key patterns through a Streamlit dashboard. It combines exploratory data analysis, simple machine learning, and live probability estimation to show how healthcare data can support early disease screening and decision-making.
 
 ## Problem Definition
 
@@ -30,7 +30,7 @@ Hospitals and clinics collect large volumes of patient information, but identify
 
 ### 1. Dataset Loading
 
-The dashboard loads the Kaggle CSV from the local `data` folder or accepts a manual upload.
+The Streamlit app loads the Kaggle CSV from the local `data` folder or accepts a manual upload.
 
 ### 2. Exploratory Data Analysis
 
