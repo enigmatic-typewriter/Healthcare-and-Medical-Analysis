@@ -1,26 +1,19 @@
 # GlucoTrack Analytics
 
-GlucoTrack Analytics is a Streamlit-based healthcare analytics project built for GTU Problem Domain 5: Healthcare and Medical Analytics. It focuses on diabetes risk analysis using the Kaggle dataset `iammustafatz/diabetes-prediction-dataset` and demonstrates exploratory data analysis, machine learning, and live prediction in a deployable Python app.
+GlucoTrack Analytics is a healthcare analytics project built for Problem Domain 5: Healthcare and Medical Analytics. It analyzes diabetes-related patient records from the Kaggle dataset `iammustafatz/diabetes-prediction-dataset`, performs exploratory data analysis, compares multiple machine learning models, and provides a Streamlit dashboard for risk prediction.
 
-## What the project does
+## Project Highlights
 
-- loads the diabetes prediction CSV from Kaggle or a local upload
-- cleans and normalizes patient attributes before modeling
-- shows EDA panels for prevalence, age, BMI, HbA1c, glucose, smoking history, and gender mix
-- trains a logistic regression model with a train/test split
-- displays accuracy, precision, recall, and confusion matrix values
-- predicts diabetes probability for a new patient profile
-- runs as a Streamlit app, so it is easy to deploy on Streamlit Community Cloud
+- exploratory analysis of patient demographics and clinical indicators
+- identification of major diabetes risk factors such as age, BMI, HbA1c, glucose, hypertension, and heart disease
+- comparison of multiple classification models instead of relying on a single baseline
+- live patient risk scoring through a clean Streamlit interface
+- reproducible training script that exports model comparison and feature-importance files
 
 ## Dataset
 
-Kaggle dataset: [Diabetes Prediction Dataset](https://www.kaggle.com/datasets/iammustafatz/diabetes-prediction-dataset)
-
-Expected file name:
-
-```text
-data/diabetes_prediction_dataset.csv
-```
+- Source: [Kaggle - Diabetes Prediction Dataset](https://www.kaggle.com/datasets/iammustafatz/diabetes-prediction-dataset)
+- Expected file location: `data/diabetes_prediction_dataset.csv`
 
 Expected columns:
 
@@ -28,58 +21,77 @@ Expected columns:
 gender, age, hypertension, heart_disease, smoking_history, bmi, HbA1c_level, blood_glucose_level, diabetes
 ```
 
-If the Kaggle CSV is not present, the app falls back to a built-in demo dataset so the project still opens correctly.
+If the Kaggle CSV is not available locally, the project uses a small built-in demo dataset so the app can still be opened and demonstrated.
 
-## How to run
+## Tech Stack
+
+- Python
+- Pandas
+- NumPy
+- Scikit-learn
+- Streamlit
+
+## Project Structure
+
+```text
+Healthcare-and-Medical-Analytics/
+|-- app.py
+|-- train_model.py
+|-- src/
+|   |-- healthcare_analytics.py
+|-- data/
+|   |-- .gitkeep
+|-- README.md
+|-- PROJECT_NOTES.md
+|-- requirements.txt
+```
+
+## How to Run
 
 1. Clone the repository.
-2. Create and activate a Python virtual environment.
+2. Create and activate a virtual environment.
 3. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Download the Kaggle dataset CSV.
-5. Put the file inside the `data` folder with the name `diabetes_prediction_dataset.csv`.
-6. Run the app:
+4. Download the Kaggle CSV and place it in the `data` folder.
+5. Start the Streamlit app:
 
 ```bash
 streamlit run app.py
 ```
 
-You can also skip step 5 and upload the CSV manually from the sidebar inside the app.
+## Training Workflow
 
-## Streamlit deployment
+To generate a quick offline training summary and export comparison artifacts:
 
-1. Push the repository to GitHub.
-2. Open Streamlit Community Cloud.
-3. Create a new app and select this repository.
-4. Set the main file path to `app.py`.
-5. Deploy.
-
-## GTU objective mapping
-
-- Performs EDA on patient health records
-- Identifies key indicators related to diabetes risk
-- Builds a disease prediction workflow using machine learning logic
-- Supports early diagnosis and health decision-making through risk scoring
-- Provides a clean internship-ready visualization layer for presentation and GitHub review
-
-## Project structure
-
-```text
-Healthcare-and-Medical-Analytics/
-|-- app.py
-|-- requirements.txt
-|-- README.md
-|-- PROJECT_NOTES.md
-|-- data/
+```bash
+python train_model.py
 ```
 
-## Future improvements
+This creates:
 
-- Add downloadable reports and charts
-- Compare multiple ML models instead of one logistic regression baseline
-- Connect the interface to Flask, FastAPI, or a database backend
-- Add role-specific dashboards for doctors and administrators
+- `artifacts/model_leaderboard.csv`
+- `artifacts/feature_importance.csv`
+- `artifacts/training_summary.txt`
+
+## Dashboard Modules
+
+- Overview KPIs for prevalence, glucose, BMI, HbA1c, and high-risk patient share
+- Cohort insights comparing diabetic and non-diabetic records
+- EDA charts for class balance, smoking history, age bands, and risk segments
+- Model evaluation panel with leaderboard, confusion matrix, and feature importance
+- Patient risk predictor for manual profile entry
+
+## Why This Project Works For Internship Review
+
+- It covers both analytics and machine learning in one project.
+- The code is organized into a reusable training module and a presentation-friendly app.
+- The dashboard is easy to demo, and the training script shows reproducible ML work beyond the UI.
+- The project directly maps to real healthcare problems like early risk detection and data-driven screening.
+
+## Disclaimer
+
+This project is built for academic and internship demonstration purposes only. It is not a clinical decision support system and should not be used for diagnosis or treatment planning.
