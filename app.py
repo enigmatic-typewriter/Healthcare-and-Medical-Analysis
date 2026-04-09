@@ -8,31 +8,14 @@ import streamlit as st
 from src.healthcare_analytics import (
     DATASET_PATH,
     MODEL_CATALOG,
+    clean_dataframe,
     format_percent,
     risk_bucket,
     run_training_workflow,
 )
 
 
-st.set_page_config(
-    page_title="GlucoTrack Analytics",
-    page_icon="H",
-    layout="wide",
-)
-
-REQUIRED_COLUMNS = [
-    "gender",
-    "age",
-    "hypertension",
-    "heart_disease",
-    "smoking_history",
-    "bmi",
-    "HbA1c_level",
-    "blood_glucose_level",
-    "diabetes",
-]
-
-NUMERIC_COLUMNS = ["age", "hypertension", "heart_disease", "bmi", "HbA1c_level", "blood_glucose_level"]
+st.set_page_config(page_title="GlucoTrack Analytics", page_icon="H", layout="wide")
 
 
 def build_demo_dataframe() -> pd.DataFrame:
@@ -70,43 +53,11 @@ Male,63,1,1,former,34.2,7.7,208,1"""
     return pd.read_csv(StringIO(raw))
 
 
-def clean_dataframe(frame: pd.DataFrame) -> pd.DataFrame:
-    data = frame.copy()
-    data.columns = [column.strip() for column in data.columns]
-
-    missing = [column for column in REQUIRED_COLUMNS if column not in data.columns]
-    if missing:
-        raise ValueError(f"Missing required columns: {', '.join(missing)}")
-
-    data = data[REQUIRED_COLUMNS].copy()
-
-    data["gender"] = data["gender"].fillna("Other").astype(str).str.strip().replace({"male": "Male", "female": "Female"})
-    data["gender"] = data["gender"].replace({"Male": "Male", "Female": "Female"}).where(
-        data["gender"].isin(["Male", "Female"]),
-        "Other",
-    )
-
-    data["smoking_history"] = data["smoking_history"].fillna("No Info").astype(str).str.strip()
-    data["smoking_history"] = data["smoking_history"].replace({"nan": "No Info", "N/A": "No Info"})
-
-    for column in NUMERIC_COLUMNS + ["diabetes"]:
-        data[column] = pd.to_numeric(data[column], errors="coerce")
-
-    data = data.dropna(subset=["diabetes"]).copy()
-    data["diabetes"] = data["diabetes"].astype(int)
-
-    return data
-
-
 def load_dataset(uploaded_file) -> tuple[pd.DataFrame, str]:
     if uploaded_file is not None:
-        frame = pd.read_csv(uploaded_file)
-        return clean_dataframe(frame), f"Uploaded file: {uploaded_file.name}"
-
+        return clean_dataframe(pd.read_csv(uploaded_file)), f"Uploaded file: {uploaded_file.name}"
     if DATASET_PATH.exists():
-        frame = pd.read_csv(DATASET_PATH)
-        return clean_dataframe(frame), f"Local file: {DATASET_PATH}"
-
+        return clean_dataframe(pd.read_csv(DATASET_PATH)), f"Local file: {DATASET_PATH}"
     return clean_dataframe(build_demo_dataframe()), "Built-in demo dataset"
 
 
@@ -116,9 +67,7 @@ def prepare_dataset(uploaded_file_bytes: bytes | None, uploaded_name: str | None
     if uploaded_file_bytes is not None and uploaded_name is not None:
         uploaded_file = StringIO(uploaded_file_bytes.decode("utf-8"))
         uploaded_file.name = uploaded_name
-
-    data, source = load_dataset(uploaded_file)
-    return data, source
+    return load_dataset(uploaded_file)
 
 
 @st.cache_resource(show_spinner=False)
@@ -126,124 +75,89 @@ def train_model(data: pd.DataFrame):
     return run_training_workflow(data)
 
 
-def glucose_band(glucose_value: float) -> str:
-    if glucose_value < 100:
-        return "Normal"
-    if glucose_value < 140:
-        return "Elevated"
-    if glucose_value < 200:
-        return "High"
-    return "Critical"
-
-
-def render_overview(data: pd.DataFrame, scored_data: pd.DataFrame):
-    prevalence = (data["diabetes"] == 1).mean()
-    high_risk_share = (scored_data["risk_band"] == "High").mean()
-    chronic_risk_share = ((data["hypertension"] == 1) | (data["heart_disease"] == 1)).mean()
-    hba1c_alert_share = (data["HbA1c_level"] >= 6.5).mean()
-
+def render_overview(data: pd.DataFrame, results: dict):
+    scored_data = results["scored_data"]
     row_one = st.columns(4)
     row_one[0].metric("Patients", f"{len(data):,}")
-    row_one[1].metric("Diabetes prevalence", format_percent(prevalence))
-    row_one[2].metric("High-risk patients", format_percent(high_risk_share))
-    row_one[3].metric("Average glucose", f"{data['blood_glucose_level'].mean():.0f}")
+    row_one[1].metric("Diabetes prevalence", format_percent((data["diabetes"] == 1).mean()))
+    row_one[2].metric("High-risk share", format_percent((scored_data["risk_band"] == "High").mean()))
+    row_one[3].metric("Immediate review", f"{results['operational_metrics']['immediate_review_patients']:,}")
 
     row_two = st.columns(4)
     row_two[0].metric("Average BMI", f"{data['bmi'].mean():.1f}")
     row_two[1].metric("Average HbA1c", f"{data['HbA1c_level'].mean():.1f}")
-    row_two[2].metric("Chronic condition share", format_percent(chronic_risk_share))
-    row_two[3].metric("HbA1c alert share", format_percent(hba1c_alert_share))
+    row_two[2].metric("Average glucose", f"{data['blood_glucose_level'].mean():.0f}")
+    row_two[3].metric("Comorbidity share", format_percent(((data["hypertension"] == 1) | (data["heart_disease"] == 1)).mean()))
 
-
-def render_cohort_insights(data: pd.DataFrame):
-    positive = data[data["diabetes"] == 1]
-    negative = data[data["diabetes"] == 0]
-
-    st.subheader("Cohort Snapshot")
-
-    col1, col2, col3 = st.columns(3)
-    col1.info(
-        f"Patients with diabetes are older on average ({positive['age'].mean():.1f} years) "
-        f"than non-diabetic patients ({negative['age'].mean():.1f} years)."
-    )
-    col2.info(
-        f"The diabetic group has a higher average BMI ({positive['bmi'].mean():.1f}) "
-        f"than the non-diabetic group ({negative['bmi'].mean():.1f})."
-    )
-    col3.info(
-        f"HbA1c shows strong separation in this dataset: {negative['HbA1c_level'].mean():.1f} "
-        f"for non-diabetic records versus {positive['HbA1c_level'].mean():.1f} for diabetic records."
-    )
-
-
-def render_eda(data: pd.DataFrame, scored_data: pd.DataFrame):
-    st.subheader("Exploratory Data Analysis")
-
-    eda_col1, eda_col2 = st.columns(2)
-
-    with eda_col1:
-        outcome_counts = data["diabetes"].map({0: "Non-diabetic", 1: "Diabetic"}).value_counts()
-        st.caption("Class balance")
-        st.bar_chart(outcome_counts)
-
-        age_band_counts = (
-            data.assign(
-                age_band=pd.cut(
-                    data["age"],
-                    bins=[0, 20, 35, 50, 65, 120],
-                    labels=["0-20", "21-35", "36-50", "51-65", "65+"],
-                    include_lowest=True,
-                )
-            )["age_band"]
-            .value_counts()
-            .sort_index()
+    left, right = st.columns([1.15, 1])
+    with left:
+        st.subheader("Problem Context")
+        st.write(
+            "This project studies diabetes risk from patient health records and shows how analytics can support earlier screening. "
+            "It combines exploratory analysis, multiple ML models, risk segmentation, and a simple operational planning view."
         )
-        st.caption("Age bands")
-        st.bar_chart(age_band_counts)
+        st.dataframe(results["cohort_summary"], use_container_width=True)
 
-        risk_counts = scored_data["risk_band"].value_counts()
-        st.caption("Predicted risk segments")
-        st.bar_chart(risk_counts)
+    with right:
+        st.subheader("Key Takeaways")
+        for takeaway in results["feature_takeaways"]:
+            st.info(takeaway)
 
-    with eda_col2:
-        smoking_counts = data["smoking_history"].value_counts()
+
+def render_eda(results: dict):
+    scored_data = results["scored_data"]
+    left, right = st.columns(2)
+
+    with left:
+        st.subheader("Population Trends")
+        st.caption("Predicted risk distribution")
+        st.bar_chart(results["risk_distribution"].set_index("risk_band")["patients"])
+        st.caption("Age band vs predicted risk")
+        age_risk = results["segment_summary"].set_index("age_band")
+        st.bar_chart(age_risk)
         st.caption("Smoking history")
-        st.bar_chart(smoking_counts)
+        st.bar_chart(scored_data["smoking_history"].value_counts())
 
-        numeric_summary = (
-            data.groupby("diabetes")[["age", "bmi", "HbA1c_level", "blood_glucose_level"]]
-            .mean()
-            .rename(index={0: "Non-diabetic", 1: "Diabetic"})
-            .round(2)
-        )
-        st.caption("Average clinical indicators by class")
-        st.dataframe(numeric_summary, use_container_width=True)
+    with right:
+        st.subheader("Clinical Signals")
+        st.caption("Glucose bands")
+        st.bar_chart(scored_data["glucose_band"].value_counts())
+        st.caption("BMI bands")
+        st.bar_chart(scored_data["bmi_band"].value_counts())
+        st.caption("Average indicators by diabetes class")
+        st.dataframe(results["cohort_summary"], use_container_width=True)
 
-        gender_mix = (
-            pd.crosstab(data["gender"], data["diabetes"])
-            .rename(columns={0: "Non-diabetic", 1: "Diabetic"})
-            .sort_index()
-        )
-        st.caption("Gender vs diabetes")
-        st.dataframe(gender_mix, use_container_width=True)
+    st.subheader("Priority Queue Preview")
+    preview_cols = [
+        "gender",
+        "age",
+        "bmi",
+        "HbA1c_level",
+        "blood_glucose_level",
+        "predicted_probability",
+        "risk_band",
+        "triage_priority",
+    ]
+    st.dataframe(
+        scored_data[preview_cols].head(15).style.format({"predicted_probability": "{:.2%}"}),
+        use_container_width=True,
+    )
 
 
 def render_model_results(results: dict):
-    st.subheader("Model Evaluation")
-
+    st.subheader("Model Lab")
     metrics = results["best_metrics"]
+
     metric_cols = st.columns(5)
-    metric_cols[0].metric("Best model", results["best_model_name"])
+    metric_cols[0].metric("Selected model", results["best_model_name"])
     metric_cols[1].metric("Accuracy", format_percent(metrics["accuracy"]))
     metric_cols[2].metric("Precision", format_percent(metrics["precision"]))
     metric_cols[3].metric("Recall", format_percent(metrics["recall"]))
     metric_cols[4].metric("F1-score", format_percent(metrics["f1_score"]))
 
-    matrix = metrics["confusion_matrix"]
-    left, right = st.columns([1, 1.3])
-
+    left, middle, right = st.columns([1.2, 1, 1])
     with left:
-        st.caption("Model comparison")
+        st.caption("Compared models")
         st.dataframe(
             results["leaderboard"].style.format(
                 {
@@ -257,8 +171,9 @@ def render_model_results(results: dict):
             use_container_width=True,
         )
 
+    with middle:
         matrix_frame = pd.DataFrame(
-            matrix,
+            metrics["confusion_matrix"],
             index=["Actual 0", "Actual 1"],
             columns=["Predicted 0", "Predicted 1"],
         )
@@ -266,19 +181,58 @@ def render_model_results(results: dict):
         st.dataframe(matrix_frame, use_container_width=True)
 
     with right:
-        chart_frame = results["feature_importance"].set_index("feature")[["importance"]]
-        st.caption("Top feature weights")
-        st.bar_chart(chart_frame)
-
-        st.caption("Selection note")
-        st.write(
-            f"{results['best_model_name']} performed best on the validation split, so the live predictor "
-            "uses that model for patient scoring."
+        st.caption("Feature importance")
+        st.bar_chart(results["feature_importance"].set_index("feature")["importance"])
+        st.caption(
+            f"{results['best_model_name']} scored highest on the held-out split, so it is used for the live prediction section."
         )
 
 
+def render_screening_planner(results: dict):
+    scored_data = results["scored_data"]
+    metrics = results["operational_metrics"]
+
+    st.subheader("Screening Planner")
+    st.write(
+        "This module is a simple academic add-on. It estimates how much follow-up load the hospital might face "
+        "if the current dataset is treated as a screening batch."
+    )
+
+    capacity_col, rate_col = st.columns(2)
+    daily_capacity = capacity_col.slider("Daily screening capacity", min_value=10, max_value=200, value=35, step=5)
+    follow_up_rate = rate_col.slider("Moderate-risk follow-up rate", min_value=0.1, max_value=1.0, value=0.6, step=0.1)
+
+    estimated_queue = metrics["high_risk_patients"] + int(metrics["moderate_risk_patients"] * follow_up_rate)
+    days_needed = max(1, int((estimated_queue + daily_capacity - 1) / daily_capacity))
+    admission_watch = int(
+        len(
+            scored_data[
+                (scored_data["predicted_probability"] >= 0.75)
+                & (scored_data["blood_glucose_level"] >= 180)
+                & ((scored_data["hypertension"] == 1) | (scored_data["heart_disease"] == 1))
+            ]
+        )
+    )
+
+    plan_cols = st.columns(4)
+    plan_cols[0].metric("High-risk cases", f"{metrics['high_risk_patients']:,}")
+    plan_cols[1].metric("Expected follow-ups", f"{estimated_queue:,}")
+    plan_cols[2].metric("Days to clear queue", f"{days_needed}")
+    plan_cols[3].metric("Admission watchlist", f"{admission_watch:,}")
+
+    st.caption("Triage distribution")
+    triage_chart = results["triage_distribution"].set_index("triage_priority")["patients"]
+    st.bar_chart(triage_chart)
+
+    st.caption("Suggested operational interpretation")
+    st.write(
+        f"With a daily capacity of {daily_capacity} screenings, the current batch would need about {days_needed} day(s) "
+        f"to clear. Around {admission_watch} patient(s) show both high predicted risk and added comorbidity signals."
+    )
+
+
 def render_predictor(results: dict):
-    st.subheader("Live Prediction")
+    st.subheader("Live Patient Prediction")
     model = results["best_model"]
 
     col1, col2, col3 = st.columns(3)
@@ -309,7 +263,6 @@ def render_predictor(results: dict):
             }
         ]
     )
-
     probability = float(model.predict_proba(candidate)[0][1])
 
     if probability >= 0.7:
@@ -319,46 +272,97 @@ def render_predictor(results: dict):
     else:
         st.success(f"Estimated diabetes probability: {format_percent(probability)}")
 
-    detail_cols = st.columns(3)
+    detail_cols = st.columns(4)
     detail_cols[0].metric("Risk band", risk_bucket(probability))
-    detail_cols[1].metric("Model in use", results["best_model_name"])
+    detail_cols[1].metric("Model used", results["best_model_name"])
     detail_cols[2].metric("Models compared", len(MODEL_CATALOG))
+    detail_cols[3].metric("Glucose reading", f"{glucose}")
 
-    st.caption("This prediction is for academic demonstration only and should not be used as a clinical diagnosis.")
+    st.caption("This output is only for academic demonstration and not for real medical diagnosis.")
+
+
+def render_project_notes(results: dict, source: str):
+    st.subheader("Project Notes")
+    st.write(
+        "The idea behind GlucoTrack Analytics is to create a mini healthcare analytics system that is simple to explain in viva "
+        "but still shows data cleaning, EDA, model training, comparison, and decision-support style outputs."
+    )
+
+    left, right = st.columns(2)
+    with left:
+        st.markdown(
+            """
+            **Objectives**
+
+            - perform exploratory data analysis on patient records
+            - identify major health indicators linked with diabetes risk
+            - compare multiple machine learning models
+            - support early screening through a live prediction interface
+            - simulate a basic operational planning view for hospital follow-up
+            """
+        )
+    with right:
+        st.markdown(
+            f"""
+            **Current Run**
+
+            - dataset source: `{source}`
+            - rows loaded: `{results['operational_metrics']['total_patients']}`
+            - selected model: `{results['best_model_name']}`
+            - immediate review cases: `{results['operational_metrics']['immediate_review_patients']}`
+            - alert share: `{format_percent(results['operational_metrics']['alert_share'])}`
+            """
+        )
+
+    st.markdown(
+        """
+        **Limitations**
+
+        - this project uses a public dataset and should be treated as an academic prototype
+        - no integration with hospital databases or medical devices is included
+        - prediction quality depends completely on the uploaded dataset
+        - model output should never be interpreted as clinical advice
+        """
+    )
 
 
 def main():
     st.title("GlucoTrack Analytics")
-    st.caption("Healthcare analytics dashboard for early diabetes screening and patient risk analysis")
+    st.caption("Healthcare and Medical Analytics project for diabetes risk analysis, triage support, and early screening")
 
-    st.sidebar.header("Dataset")
+    st.sidebar.header("Dataset Controls")
     uploaded = st.sidebar.file_uploader("Upload Kaggle CSV", type=["csv"])
-    st.sidebar.markdown(
-        "[Dataset link](https://www.kaggle.com/datasets/iammustafatz/diabetes-prediction-dataset)"
-    )
+    st.sidebar.markdown("[Dataset link](https://www.kaggle.com/datasets/iammustafatz/diabetes-prediction-dataset)")
     st.sidebar.write(f"Expected path: `{DATASET_PATH}`")
+    st.sidebar.write("If no file is available, the app falls back to a small inbuilt sample.")
 
     uploaded_bytes = uploaded.getvalue() if uploaded is not None else None
     uploaded_name = uploaded.name if uploaded is not None else None
     data, source = prepare_dataset(uploaded_bytes, uploaded_name)
+    results = train_model(data)
 
     st.sidebar.success(source)
     st.sidebar.write(f"Rows loaded: {len(data):,}")
-    results = train_model(data)
-    st.sidebar.write(f"Best model: {results['best_model_name']}")
+    st.sidebar.write(f"Selected model: {results['best_model_name']}")
+    st.sidebar.write(f"High-risk patients: {results['operational_metrics']['high_risk_patients']}")
 
-    render_overview(data, results["scored_data"])
-    st.divider()
-    render_cohort_insights(data)
-    st.divider()
-    render_eda(data, results["scored_data"])
-    st.divider()
-    render_model_results(results)
-    st.divider()
-    render_predictor(results)
-    st.divider()
+    tabs = st.tabs(["Overview", "EDA", "Model Lab", "Screening Planner", "Prediction", "Notes"])
 
-    st.subheader("Data Preview")
+    with tabs[0]:
+        render_overview(data, results)
+    with tabs[1]:
+        render_eda(results)
+    with tabs[2]:
+        render_model_results(results)
+    with tabs[3]:
+        render_screening_planner(results)
+    with tabs[4]:
+        render_predictor(results)
+    with tabs[5]:
+        render_project_notes(results, source)
+
+    st.divider()
+    st.subheader("Dataset Preview")
     st.dataframe(results["scored_data"].head(20), use_container_width=True)
 
 
