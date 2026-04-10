@@ -1,4 +1,4 @@
-# Project Notes for Internship Viva
+# Project Notes
 
 ## Project Title
 

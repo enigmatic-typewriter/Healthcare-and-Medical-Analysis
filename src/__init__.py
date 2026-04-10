@@ -1,1 +1,1 @@
-"""Healthcare analytics project package."""
+"""Core package for the healthcare analytics project."""

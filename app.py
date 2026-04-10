@@ -328,7 +328,7 @@ def render_project_notes(results: dict, source: str):
 
 def main():
     st.title("GlucoTrack Analytics")
-    st.caption("Healthcare and Medical Analytics project for diabetes risk analysis, triage support, and early screening")
+    st.caption("Healthcare and Medical Analytics dashboard for diabetes risk analysis, triage support, and early screening")
 
     st.sidebar.header("Dataset Controls")
     uploaded = st.sidebar.file_uploader("Upload Kaggle CSV", type=["csv"])

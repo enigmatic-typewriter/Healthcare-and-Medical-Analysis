@@ -18,7 +18,7 @@ def main():
     results["cohort_summary"].to_csv(output_dir / "cohort_summary.csv")
 
     lines = [
-        "GlucoTrack Analytics - Training Summary",
+        "GlucoTrack Analytics - Model Summary",
         f"Dataset source: {source}",
         f"Rows loaded: {len(data)}",
         f"Best model: {results['best_model_name']}",

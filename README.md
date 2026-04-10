@@ -1,6 +1,6 @@
 # GlucoTrack Analytics
 
-GlucoTrack Analytics is an internship project under the domain **Healthcare & Medical Analytics**. The project focuses on early diabetes risk analysis using patient health records and combines:
+GlucoTrack Analytics is a healthcare analytics project under the domain **Healthcare & Medical Analytics**. The project focuses on early diabetes risk analysis using patient health records and combines:
 
 - exploratory data analysis
 - machine learning model comparison
@@ -106,9 +106,6 @@ New project/
 |-- data/
 |   |-- .gitkeep
 |-- artifacts/                # generated after training script
-|-- index.html                # static web demo version
-|-- app.js
-|-- styles.css
 |-- README.md
 |-- PROJECT_NOTES.md
 |-- requirements.txt
@@ -145,7 +142,7 @@ The training script exports:
 - `artifacts/cohort_summary.csv`
 - `artifacts/training_summary.txt`
 
-## Why This Project Is Good For Internship Review
+## Why This Project Is Useful
 
 - It clearly maps to the healthcare analytics problem statement.
 - It includes both EDA and machine learning instead of only a prediction form.
@@ -154,4 +151,4 @@ The training script exports:
 
 ## Disclaimer
 
-This is an academic project created for internship demonstration. It is not a medical product and should not be used for actual diagnosis or treatment decisions.
+This is an academic project created for demonstration and learning purposes. It is not a medical product and should not be used for actual diagnosis or treatment decisions.

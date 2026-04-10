@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Utilities for data preparation, model comparison, and patient risk scoring."""
+
 from io import StringIO
 from pathlib import Path
 
