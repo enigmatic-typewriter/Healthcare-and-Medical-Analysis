@@ -6,3 +6,15 @@ env/
 artifacts/
 data/diabetes_prediction_dataset.csv
 *.pyc
+*.tmp
+ppt_update_*/
+ppt_update_*.zip
+template_unpack/
+template_from_s21.pptx
+template_copy.zip
+glucotrack_*.png
+chart_*.png
+borderwatch_slide_dump.txt
+template_extracted.txt
+msproject_final_preview.txt
+yuvraj-healthcare-rebuild/
